@@ -20,9 +20,18 @@ def load_cron_task(scheduler):
         reset_cache_at_serverside,
         "cron",
         hour=9,
-        minute=29,
+        minute=24,
         second=55,
         name="reset_cache_at_serverside",
+    )
+    
+    scheduler.add_job(
+        fetch_price_from_akshare,
+        "cron",
+        hour=9,
+        minute=25,
+        second="0,5",
+        name="fetch_price_task",
     )
 
     scheduler.add_job(
