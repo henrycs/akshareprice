@@ -30,7 +30,7 @@ def load_cron_task(scheduler):
         "cron",
         hour=9,
         minute=25,
-        second="0,5",
+        second="0,5,10",
         name="fetch_price_task",
     )
 
@@ -62,7 +62,7 @@ def load_cron_task(scheduler):
         "cron",
         hour=11,
         minute=30,
-        second="0,5",
+        second="0,5,10",
         name="fetch_price_task",
     )
 
@@ -85,7 +85,7 @@ def load_cron_task(scheduler):
         "cron",
         hour=15,
         minute=0,
-        second="0,5",
+        second="0,5,10",
         name="fetch_price_task",
     )
 
