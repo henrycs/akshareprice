@@ -9,7 +9,7 @@ import gzip
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import cfg4py
 
-from datasync import data_writter, index_data_writter, reset_cache
+from datasync import data_writter, reset_cache
 
 
 logger = logging.getLogger(__name__)
@@ -96,40 +96,17 @@ async def start_cron_tasks():
     scheduler.start()
 
 
-def load_data():
-    all_secs = None
-    with open("/home/henry/myapps/aksharetest/all_secs.pik", "rb") as f:
-        all_secs = pickle.load(f)
-
-    if all_secs is None:
-        return    
-    data = all_secs[["代码", "最新价"]]
-    return data
-
-
 def get_akshare_data_em():
     try:
         all_secs = ak.stock_zh_a_spot_em()
         if all_secs is None or len(all_secs) == 0:
             return None
         
-        data = all_secs[["代码", "最新价"]]
+        # 最高 最低 今开 昨收
+        data = all_secs[["代码", "最新价", "今开", "昨收", "最高", "最低"]]
         return data
     except Exception as e:
         logger.error("exception found while getting data from akshare: %s", e)
-        return None
-
-
-def get_akshare_index_data_sina():
-    try:
-        all_secs = ak.stock_zh_index_spot()
-        if all_secs is None or len(all_secs) == 0:
-            return None
-        
-        data = all_secs[["代码", "最新价"]]
-        return data
-    except Exception as e:
-        logger.error("exception found while getting index data from akshare: %s", e)
         return None
 
 
@@ -162,30 +139,6 @@ async def process_stock_price(cfg, dt: datetime.datetime):
 
     server_url = cfg.server
     url = f"http://{server_url}/api/akshare/upload"
-    headers = {'ClientTime': dt.strftime("%Y-%m-%d %H:%M:%S"), 'ClientSource': running_mode}
-    rsp = httpx.post(url, content=_zipped, headers=headers)
-    if rsp.status_code != 200:
-        logger.info("response of post: %s", rsp.text)
-
-
-async def process_index_price(cfg, dt: datetime.datetime):
-    running_mode = cfg.running_mode
-
-    data = get_akshare_index_data_sina()
-    if data is None:
-        logger.info("no data returned from akshare for index: %s", dt)
-        return False
-
-    if running_mode == "server":
-        await index_data_writter(data, running_mode)
-        return True
-
-    # pack data and send to server
-    binary = pickle.dumps(data, protocol=4)
-    _zipped = gzip.compress(binary)
-
-    server_url = cfg.server
-    url = f"http://{server_url}/api/akshare/upload_idx"
     headers = {'ClientTime': dt.strftime("%Y-%m-%d %H:%M:%S"), 'ClientSource': running_mode}
     rsp = httpx.post(url, content=_zipped, headers=headers)
     if rsp.status_code != 200:

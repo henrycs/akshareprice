@@ -43,7 +43,8 @@ def get_data_test():
     t1 = time.time()
     print("    call: %f" % (t1 - t0))
     
-    data = all_secs[["代码", "最新价", "今开", "昨收"]]
+    #data = all_secs[["代码", "最新价", "今开", "昨收"]]
+    data = all_secs[["代码", "最新价", "今开", "昨收", "最高", "最低"]]
     t2  = time.time()
     print("    convert: %f" % (t2 - t1))
 
@@ -55,9 +56,9 @@ async def main():
     #load_data()
     #save_data()
 
-    dsn = "redis://192.168.100.101:56379/3"
+    dsn = "redis://192.168.100.101:56379/4"
     db = aioredis.from_url(dsn, encoding="utf-8", decode_responses=True)
-    key = "security:latest_price_test"
+    key = "security:latest_price_info"
 
     download_times = 0
     now = datetime.datetime.now()
@@ -68,11 +69,12 @@ async def main():
         if data is None:
             break
 
-        code = "002227"
         _data = data.to_numpy()
 
         T0 = time.time()
-        await db.hset(key, mapping = {k:v for k,v in zip(_data[:,0], _data[:, 1])})
+
+        await db.hset(key, mapping = {k:f'{v2},{v3},{v4},{v5}' for k,v2,v3,v4,v5 in zip(_data[:,0], _data[:, 2], _data[:, 3], _data[:, 4], _data[:, 5])})
+        
         print("hset cost ", time.time() - T0)
 
         download_times += 1
@@ -84,5 +86,10 @@ async def main():
         if delta > 0:
             time.sleep(delta)
 
+
+async def testnp():
+    a = np.array((['a', 1, 2, 3, 4], ['b', 11, 12, 13, 14]))
+    print(a[:, 1])
+    print({k:f'{v2},{v3},{v4}' for k,v2,v3,v4 in zip(a[:,0], a[:, 2], a[:, 3], a[:, 4])})
 
 asyncio.run(main())

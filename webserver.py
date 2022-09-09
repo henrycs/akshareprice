@@ -4,7 +4,7 @@ import arrow
 import datetime
 from sanic import Blueprint, Sanic, response, Request
 import gzip
-from datasync import data_writter, index_data_writter, init_redis_connection
+from datasync import data_writter, init_redis_connection
 
 from task import start_cron_tasks
 
@@ -44,36 +44,6 @@ async def bp_admin_upload(request: Request):
     except Exception as e:
         logger.error("exception when decompress and save data, %s", e)
         return response.text("Exeception found")
-
-
-@bp_akshare.route("/upload_idx", methods=["POST"])
-async def bp_admin_upload_index(request: Request):
-    client_ts = request.headers.get("ClientTime", None)
-    if client_ts is None:
-        return response.text("No ClientTime found for Index", status=400)
-    client_src = request.headers.get("ClientSource", None)
-    if client_src is None:
-        return response.text("No ClientSource found for Index", status=400)
-
-    now = datetime.datetime.now()
-    raw_data = request.body
-    try:
-        _date = arrow.get(client_ts).naive
-        delta = now - _date
-        if delta.seconds > 5:
-            logger.error("received index data expired: %s", client_ts)
-            return response.text("Index Data expired", status=400)        
-
-        if raw_data is None or len(raw_data) < 20000:
-            return response.text("Invalid index data size", status=400)
-
-        _unzip = gzip.decompress(raw_data)
-        secs_data = pickle.loads(_unzip)
-        await index_data_writter(secs_data, client_src)
-        return response.text("OK")
-    except Exception as e:
-        logger.error("exception when decompress and save index data, %s", e)
-        return response.text("Exeception found for Index")
 
 
 async def initialize_server(app, loop):
