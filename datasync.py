@@ -31,5 +31,6 @@ async def data_writter(secs_data, client_src: str):
     await db.hset(key_price, mapping = {k:v for k,v in zip(data[:,0], data[:, 1])})
     logger.info("latest price saved into cache: %s, %s, %d", client_src, now, len(data))
 
-    await db.hset(key_info, mapping = {k:f'{v2},{v3},{v4},{v5}' for k,v2,v3,v4,v5 in zip(data[:,0], data[:, 2], data[:, 3], data[:, 4], data[:, 5])})
+    # 新的key保存所有数据
+    await db.hset(key_info, mapping = {k:f'{v1},{v2},{v3},{v4},{v5}' for k,v1,v2,v3,v4,v5 in zip(data[:,0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5])})
     logger.info("price info saved into cache: %s, %s", client_src, now)
