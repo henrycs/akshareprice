@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 db = None
 key_price = "security:latest_price"
-key_info = "security:latest_price_info"
+key_stock = "security:latest_price_info"
+key_idx = "security:latest_index_info"
 
 
 def init_redis_connection():
@@ -20,8 +21,9 @@ def init_redis_connection():
 
 async def reset_cache():
     await db.delete(key_price)
-    await db.delete(key_info)
-    logger.info("cache reset: %s, %s", key_price, key_info)
+    await db.delete(key_stock)
+    await db.delete(key_idx)
+    logger.info("cache reset: %s, %s", key_price, key_stock)
 
 
 async def data_writter(secs_data, client_src: str):
@@ -32,5 +34,13 @@ async def data_writter(secs_data, client_src: str):
     logger.info("latest price saved into cache: %s, %s, %d", client_src, now, len(data))
 
     # 新的key保存所有数据
-    await db.hset(key_info, mapping = {k:f'{v1},{v2},{v3},{v4},{v5}' for k,v1,v2,v3,v4,v5 in zip(data[:,0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5])})
-    logger.info("price info saved into cache: %s, %s", client_src, now)
+    await db.hset(key_stock, mapping = {k:f'{v1},{v2},{v3},{v4},{v5}' for k,v1,v2,v3,v4,v5 in zip(data[:,0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5])})
+    logger.info("stock price saved into cache: %s, %s", client_src, now)
+
+
+async def idx_data_writter(idx_data, client_src: str):
+    now = datetime.datetime.now()
+
+    data = idx_data.to_numpy()
+    await db.hset(key_idx, mapping = {k:f'{v1},{v2},{v3},{v4},{v5}' for k,v1,v2,v3,v4,v5 in zip(data[:,0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], data[:, 5])})
+    logger.info("index data saved into cache: %s, %s", client_src, now)

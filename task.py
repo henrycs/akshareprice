@@ -110,6 +110,20 @@ def get_akshare_data_em():
         return None
 
 
+def get_akshare_index_sina():
+    try:
+        all_indexes = ak.stock_zh_index_spot()
+        if all_indexes is None or len(all_indexes) == 0:
+            return None
+        
+        # 代码 名称 最新价 涨跌额 涨跌幅 昨收 今开 最高 最低 成交量 成交额
+        data = all_indexes[["代码", "最新价", "昨收", "今开", "最高", "最低"]]
+        return data
+    except Exception as e:
+        logger.error("exception found while getting data from akshare: %s", e)
+        return None
+
+
 async def reset_cache_at_serverside():
     now = datetime.datetime.now()
     if now.weekday() >= 5:  # 周末不运行
@@ -126,7 +140,7 @@ async def process_stock_price(cfg, dt: datetime.datetime):
 
     data = get_akshare_data_em()
     if data is None:
-        logger.info("no data returned from akshare: %s", dt)
+        logger.info("no stock data returned from akshare: %s", dt)
         return False
 
     if running_mode == "server":
@@ -142,7 +156,29 @@ async def process_stock_price(cfg, dt: datetime.datetime):
     headers = {'ClientTime': dt.strftime("%Y-%m-%d %H:%M:%S"), 'ClientSource': running_mode}
     rsp = httpx.post(url, content=_zipped, headers=headers)
     if rsp.status_code != 200:
-        logger.info("response of post: %s", rsp.text)
+        logger.info("response of post for stock: %s", rsp.text)
+
+
+async def process_index_price(cfg, dt: datetime.datetime):
+    running_mode = cfg.running_mode
+    if running_mode != "aliyun":
+        return True
+
+    data = get_akshare_index_sina()
+    if data is None:
+        logger.info("no index data returned from akshare: %s", dt)
+        return False
+
+    # pack data and send to server
+    binary = pickle.dumps(data, protocol=4)
+    _zipped = gzip.compress(binary)
+
+    server_url = cfg.server
+    url = f"http://{server_url}/api/akshare/upload_index"
+    headers = {'ClientTime': dt.strftime("%Y-%m-%d %H:%M:%S"), 'ClientSource': running_mode}
+    rsp = httpx.post(url, content=_zipped, headers=headers)
+    if rsp.status_code != 200:
+        logger.info("response of post for index: %s", rsp.text)
 
 
 async def fetch_price_from_akshare():
@@ -169,5 +205,4 @@ async def fetch_price_from_akshare():
     logger.info("%s side: %s", running_mode, now)
 
     await process_stock_price(cfg, now)
-
-    # await process_index_price(cfg, now)
+    await process_index_price(cfg, now)
