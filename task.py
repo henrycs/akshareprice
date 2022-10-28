@@ -69,14 +69,7 @@ def load_cron_task(scheduler):
     scheduler.add_job(
         fetch_price_from_akshare,
         "cron",
-        hour=13,
-        second="*/5",
-        name="fetch_price_task",
-    )
-    scheduler.add_job(
-        fetch_price_from_akshare,
-        "cron",
-        hour=14,
+        hour="13-14",
         second="*/5",
         name="fetch_price_task",
     )

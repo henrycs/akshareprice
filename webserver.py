@@ -64,7 +64,7 @@ async def bp_admin_upload_idx(request: Request):
             logger.error("received index data expired: %s", client_ts)
             return response.text("Index data expired", status=400)        
 
-        if raw_data is None or len(raw_data) < 20000:
+        if raw_data is None or len(raw_data) < 8000:
             return response.text("Invalid index data size", status=400)
 
         _unzip = gzip.decompress(raw_data)
