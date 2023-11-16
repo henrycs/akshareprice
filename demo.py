@@ -1,3 +1,5 @@
+import contextlib
+import io
 import time
 import datetime
 import asyncio
@@ -51,6 +53,23 @@ def get_data_test():
     return data
 
 
+def get_akshare_index_sina():
+    try:
+        all_indexes = ak.stock_zh_index_spot()
+        if all_indexes is None or len(all_indexes) == 0:
+            return None
+
+        # 代码 名称 最新价 涨跌额 涨跌幅 昨收 今开 最高 最低 成交量 成交额
+        data = all_indexes[["代码", "最新价", "昨收", "今开", "最高", "最低"]]
+        return data
+    except Exception as e:
+        print("exception found while getting data from akshare: ", e)
+        return None
+
+
+async def get_index():
+    with contextlib.redirect_stderr(io.StringIO()):
+        return get_akshare_index_sina()
 
 async def main():
     #load_data()
@@ -92,4 +111,4 @@ async def testnp():
     print(a[:, 1])
     print({k:f'{v2},{v3},{v4}' for k,v2,v3,v4 in zip(a[:,0], a[:, 2], a[:, 3], a[:, 4])})
 
-asyncio.run(main())
+asyncio.run(get_index())
